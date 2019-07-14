@@ -3,9 +3,8 @@ const dashboardController = require('./controllers/dashboard.controller');
 
 const router = new Router();
 
-router.get('/dashboard/column/create', dashboardController.createColumn);
-router.get('/dashboard/task/create', dashboardController.createTask);
-
-router.get('/dashboard/column/get', dashboardController.getColumn);
+router.post('/dashboard/column/create', dashboardController.createColumn);
+router.post('/dashboard/task/create', dashboardController.createTask);
+router.get('/dashboard/company/:company_id/columns', dashboardController.getCompanyColumns);
 
 module.exports = router;

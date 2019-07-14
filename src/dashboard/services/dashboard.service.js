@@ -1,36 +1,32 @@
 const Column = require('../../shared/database/models/column.schema');
 const Task = require('../../shared/database/models/task.schema');
 
-function createColumn() {
-  const instance = new Column();
-  instance.title = 'hello';
-  instance.company_id = 1;
-  instance.save(function (err) {
-  });
+function createColumn(title, company_id, account_id) {
+  const column = new Column({ title, company_id, account_id });
+  column.save();
+
+  return column;
 };
 
-async function getColumn() {
-  const column =  await Column.findById('5d29a9e0c6de761eaff6ad0e', {_id: 0, __v:0}).exec();
-  const results = await Task.find({column: '5d29a9e0c6de761eaff6ad0e'}, {_id:0, __v:0}).exec();
+function createTask(title, description, author_id, column_id ) {
+  const task = new Task({ title, description, author_id, column_id });
+  task.save();
 
-  return {
-    column,
-    tasks: results
-  }
+  return task;
 };
 
-async function createTask() {
-  const column = await Column.findById('5d29a9e0c6de761eaff6ad0e');
+async function getCompanyColumns(company_id) {
+  // TODO find better way to get all company columns with tasks
+  const columns = await Column.find({company_id}, { __v:0 }).exec();
+  const results1 = await Task.find({column_id: columns[0]._id}, { __v:0 }).exec();
 
-    new Task({
-      title: 'Casino Royale',
-      description: 'opis neki',
-      column: column._id    // assign the _id from the person
-    }).save();
+  return [
+    { column: columns[0], tasks: results1 }
+  ];
 };
 
 module.exports = {
-  getColumn,
+  getCompanyColumns,
   createColumn,
   createTask
 }
