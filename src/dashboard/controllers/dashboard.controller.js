@@ -18,8 +18,16 @@ async function getCompanyColumns(req, res) {
   res.json(results);
 };
 
+async function createColumnOrder(req, res) {
+  console.log('USAO');
+  const { company_id } = req.params;
+  const result = await dashboardService.createColumnOrder(company_id);
+  res.json(result);
+}
+
 module.exports = {
   getCompanyColumns,
   createColumn,
   createTask,
+  createColumnOrder,
 }
