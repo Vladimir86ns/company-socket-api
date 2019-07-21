@@ -53,7 +53,7 @@ function subscribe(eventName) {
         await Column.findOneAndUpdate({_id: column.column_id}, {task_ids: column.task_ids});
       });
     }
-    webSocketService.getConnection().emit('dva', e.newState);
+    webSocketService.getConnection().emit(`${e.updated.column_order_id}-${e.updated.account_id}-${e.updated.company_id}`, e.newState);
   })
 }
 
