@@ -2,6 +2,7 @@ const Column = require('../../shared/database/models/column.schema');
 const Task = require('../../shared/database/models/task.schema');
 const ColumnOrder = require('../../shared/database/models/column-order.schema');
 const map = require('lodash/map');
+const webSocketService = require('../../shared/websocket/websocket.service');
 
 function createColumn(title, company_id, account_id) {
   const column = new Column({ title, company_id, account_id });
@@ -39,16 +40,27 @@ async function createColumnOrder(companyId) {
     return column._id
   });
 
-  console.log(onlyIdsValue);
   const columnOrder = new ColumnOrder({ column_ids:  onlyIdsValue, company_id: companyId});
   columnOrder.save();
 
   return columnOrder;
 }
 
+function subscribe(eventName) {
+  webSocketService.getConnection().subscribe(eventName, (e) => {
+    webSocketService.getConnection().emit('dva', e);
+  })
+}
+
+function unsubscribe(eventName) {
+  webSocketService.getConnection().unsubscribe(eventName);
+}
+
 module.exports = {
   getCompanyColumns,
   createColumn,
   createTask,
-  createColumnOrder
+  createColumnOrder,
+  subscribe,
+  unsubscribe
 }
