@@ -48,7 +48,12 @@ async function createColumnOrder(companyId) {
 
 function subscribe(eventName) {
   webSocketService.getConnection().subscribe(eventName, (e) => {
-    webSocketService.getConnection().emit('dva', e);
+    if (e.updated.columns.length) {
+      e.updated.columns.forEach(async column => {
+        await Column.findOneAndUpdate({_id: column.column_id}, {task_ids: column.task_ids});
+      });
+    }
+    webSocketService.getConnection().emit('dva', e.newState);
   })
 }
 
