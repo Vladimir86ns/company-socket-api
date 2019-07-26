@@ -1,6 +1,15 @@
 const dashboardService = require('../services/dashboard.service');
+const { validationResult } = require('express-validator');
+const get = require('lodash/get');
 
 function createColumn(req, res) {
+  const errors = get(validationResult(req), 'errors');
+  if (errors) {
+    res.status(404).json(errors);
+
+    return;
+  }
+  
   const { title, company_id, account_id } = req.body;
   const results = dashboardService.createColumn(title, company_id, account_id);
   res.json(results);
