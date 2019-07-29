@@ -4,4 +4,4 @@ ADD . .
 COPY package.json /var/www/socket-api/
 RUN npm install
 CMD [ "node", "index-socket-api.js" ]
-EXPOSE 4000 6200
+EXPOSE 4000

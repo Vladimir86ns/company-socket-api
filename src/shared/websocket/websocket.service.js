@@ -2,7 +2,7 @@ const deepstream = require( 'deepstream.io-client-js' );
 let client = null;
 
 const connect = () => {
-  client = deepstream('127.0.0.1:6020', { silentDeprecation: true });
+  client = deepstream('localhost:6020', { silentDeprecation: true });
   setEventHandlers();
 };
 

@@ -9,7 +9,6 @@ module.exports = {
   connections: {
     mongodb: {
       host: 'localhost',
-      // host: 'mongo',
       port: 27017,
       user: '',
       password: '',
