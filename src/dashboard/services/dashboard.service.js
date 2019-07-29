@@ -1,11 +1,26 @@
 const Column = require('../../shared/database/models/column.schema');
 const Task = require('../../shared/database/models/task.schema');
+const ColumnOrder = require('../../shared/database/models/column-order.schema');
+const map = require('lodash/map');
+const isEmpty = require('lodash/isEmpty');
+const webSocketService = require('../../shared/websocket/websocket.service');
 
-function createColumn(title, company_id, account_id) {
+/**
+ * Create new column, and update column order with column id.
+ * 
+ * @param {string} title 
+ * @param {number} company_id 
+ * @param {number} account_id 
+ */
+async function createColumn(title, company_id, account_id) {
   const column = new Column({ title, company_id, account_id });
-  column.save();
+  await column.save();
 
-  return column;
+  const columnOrder = await updateColumnOrder(company_id);
+  const results = await getCompanyColumns(company_id);
+  webSocketService.getConnection().emit(`${columnOrder._id}-${account_id}-${company_id}`, results);
+
+  return results;
 };
 
 function createTask(title, description, author_id, column_id ) {
@@ -15,18 +30,79 @@ function createTask(title, description, author_id, column_id ) {
   return task;
 };
 
+/**
+ * Get all company for dashboards.
+ * 
+ * @param {number} company_id 
+ */
 async function getCompanyColumns(company_id) {
   // TODO find better way to get all company columns with tasks
-  const columns = await Column.find({company_id}, { __v:0 }).exec();
-  const results1 = await Task.find({column_id: columns[0]._id}, { __v:0 }).exec();
+  const allColumns = await Column.find({company_id}, { __v:0 }).exec();
+  const onlyIdsValue = map(allColumns, (column) => {
+    return column._id;
+  });
+  const allTasks = await Task.find({column_id: {$in: onlyIdsValue}}, { __v:0 }).exec();
+  let columnOrder = await ColumnOrder.findOne({company_id}, { __v:0 }).exec();
 
-  return [
-    { column: columns[0], tasks: results1 }
-  ];
+  // if new company does not have column order, create new one
+  if (isEmpty(columnOrder)) {
+    columnOrder = await createColumnOrder(company_id);
+  }
+
+  return {
+    columns: allColumns,
+    tasks: allTasks,
+    columnOrder: columnOrder
+  };
 };
+
+/**
+ * Create column order, on new task dashboard.
+ * 
+ * @param {number} companyId 
+ */
+async function createColumnOrder(companyId) {
+  const columnOrder = new ColumnOrder({ column_ids:  onlyIdsValue, company_id: companyId});
+  columnOrder.save();
+
+  return columnOrder;
+}
+
+/**
+ * Update column order with column ids.
+ * 
+ * @param {number} companyId 
+ */
+async function updateColumnOrder(companyId) {
+  const columnsIds = await Column.find({company_id: companyId}, { _id: 1 }).exec();
+  const onlyIdsValue = map(columnsIds, (column) => {
+    return column._id
+  });
+
+  await ColumnOrder.findOneAndUpdate({company_id: companyId}, {column_ids: onlyIdsValue});
+  return await ColumnOrder.findOne({company_id: companyId});
+}
+
+function subscribe(eventName) {
+  webSocketService.getConnection().subscribe(eventName, (e) => {
+    if (e.updated.columns.length) {
+      e.updated.columns.forEach(async column => {
+        await Column.findOneAndUpdate({_id: column.column_id}, {task_ids: column.task_ids});
+      });
+    }
+    webSocketService.getConnection().emit(`${e.updated.column_order_id}-${e.updated.account_id}-${e.updated.company_id}`, e.newState);
+  })
+}
+
+function unsubscribe(eventName) {
+  webSocketService.getConnection().unsubscribe(eventName);
+}
 
 module.exports = {
   getCompanyColumns,
   createColumn,
-  createTask
+  createTask,
+  createColumnOrder,
+  subscribe,
+  unsubscribe
 }
