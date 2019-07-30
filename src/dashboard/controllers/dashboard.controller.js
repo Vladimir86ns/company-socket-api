@@ -17,8 +17,8 @@ async function createColumn(req, res) {
 };
 
 function createTask(req, res) {
-  const { title, description, author_id, column_id } = req.body;
-  const results = dashboardService.createTask(title, description, author_id, column_id);
+  const { title, description, author_id, column_id, column_order_id, company_id } = req.body;
+  const results = dashboardService.createTask(title, description, author_id, column_id, column_order_id, company_id);
   res.json(results);
 };
 

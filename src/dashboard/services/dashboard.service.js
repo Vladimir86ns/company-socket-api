@@ -23,11 +23,15 @@ async function createColumn(title, company_id, account_id) {
   return results;
 };
 
-function createTask(title, description, author_id, column_id ) {
-  const task = new Task({ title, description, author_id, column_id });
-  task.save();
+async function createTask(title, description, authorId, columnId, columnOrderId, companyId ) {
+  const task = new Task({ title, description, author_id: authorId, column_id: columnId });
+  await task.save();
+  const column = await Column.findOne({_id: columnId}).exec();
+  await column.update({task_ids: [task._id].concat(column.task_ids)});
+  const results = await getCompanyColumns(companyId);
+  webSocketService.getConnection().emit(`${columnOrderId}-${column.account_id}-${companyId}`, results);
 
-  return task;
+  return results;
 };
 
 /**
@@ -62,7 +66,7 @@ async function getCompanyColumns(company_id) {
  * @param {number} companyId 
  */
 async function createColumnOrder(companyId) {
-  const columnOrder = new ColumnOrder({ column_ids:  onlyIdsValue, company_id: companyId});
+  const columnOrder = new ColumnOrder({ column_ids:  [], company_id: companyId});
   columnOrder.save();
 
   return columnOrder;
