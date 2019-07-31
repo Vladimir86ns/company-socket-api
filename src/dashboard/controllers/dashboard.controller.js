@@ -6,20 +6,25 @@ const get = require('lodash/get');
 async function createColumn(req, res) {
   const errors = get(validationResult(req), 'errors');
   if (!isEmpty(errors)) {
-    res.status(404).json(errors);
-
-    return;
+    return res.status(404).json(errors);
   }
 
   const { title, company_id, account_id } = req.body;
-  const results = await dashboardService.createColumn(title, company_id, account_id);
-  res.json(results);
+  res.json(
+    await dashboardService.createColumn(title, company_id, account_id)
+  );
 };
 
-function createTask(req, res) {
-  const { title, description, author_id, column_id } = req.body;
-  const results = dashboardService.createTask(title, description, author_id, column_id);
-  res.json(results);
+async function createTask(req, res) {
+  const errors = get(validationResult(req), 'errors');
+  if (!isEmpty(errors)) {
+    return res.status(404).json(errors);
+  }
+
+  const { title, description, author_id, column_id, column_order_id, company_id } = req.body;
+  res.json(
+    await dashboardService.createTask(title, description, author_id, column_id, column_order_id, company_id)
+  );
 };
 
 async function getCompanyColumns(req, res) {
