@@ -18,7 +18,6 @@ async function createColumn(title, company_id, account_id) {
 
   const columnOrder = await updateColumnOrder(company_id);
   const results = await getCompanyColumns(company_id);
-  console.log('RESULTS : ', results);
   webSocketService.getConnection().emit(`${columnOrder._id}-${account_id}-${company_id}`, results);
 
   return results;
