@@ -23,7 +23,10 @@ async function updateColumn(title, columnId, companyId) {
   const column = await columnDBService.getSingleColumn({_id: columnId});
 
   const results = await getCompanyColumns(companyId);
-  results.message_type = UPDATE_COLUMN;
+  results.updateData = {
+    message_type: UPDATE_COLUMN,
+    new_name: title
+  };
   webSocketService.getConnection().emit(`${results.columnOrder._id}-${column.account_id}-${companyId}`, results);
 
   return results;
