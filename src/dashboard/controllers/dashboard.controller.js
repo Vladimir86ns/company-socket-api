@@ -21,9 +21,8 @@ async function createTask(req, res) {
     return res.status(404).json(errors);
   }
 
-  const { title, description, author_id, column_id, column_order_id, company_id, assigned_ids } = req.body;
   res.json(
-    await dashboardService.createTask(title, description, author_id, column_id, column_order_id, company_id, assigned_ids)
+    await dashboardService.createTask(req.body)
   );
 };
 

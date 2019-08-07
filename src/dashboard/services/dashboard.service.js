@@ -42,20 +42,20 @@ async function createColumn(title, company_id, account_id) {
  * @param {string} columnOrderId 
  * @param {number} companyId 
  */
-async function createTask(title, description, authorId, columnId, columnOrderId, companyId, assignedIds ) {
-  const createdAt = moment().format('lll'); 
-  const task = new Task({ title, description, author_id: authorId, column_id: columnId, assigned_ids: assignedIds, created_at: createdAt });
+async function createTask(properties) {
+  properties.created_at = moment().format('lll'); 
+  const task = new Task(properties);
   await task.save();
-  const column = await Column.findOne({_id: columnId}).exec();
+  const column = await Column.findOne({_id: properties.column_id}).exec();
   await column.update({task_ids: [task._id].concat(column.task_ids)});
-  const results = await getCompanyColumns(companyId);
+  const results = await getCompanyColumns(properties.company_id);
 
   results.updateData = {
     message_type: TYPE_CREATE_TASK,
-    new_name: title
+    new_name: properties.title
   };
 
-  webSocketService.getConnection().emit(`${columnOrderId}-${column.account_id}-${companyId}`, results);
+  webSocketService.getConnection().emit(`${properties.column_order_id}-${column.account_id}-${properties.company_id}`, results);
 
   return results;
 };
