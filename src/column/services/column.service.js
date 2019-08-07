@@ -5,7 +5,7 @@ const ColumnOrder = require('../../shared/database/models/column-order.schema');
 const map = require('lodash/map');
 const isEmpty = require('lodash/isEmpty');
 const webSocketService = require('../../shared/websocket/websocket.service');
-const { UPDATE_COLUMN} = require('../../shared/consts/messages-types');
+const { TYPE_UPDATE_COLUMN} = require('../../shared/consts/messages-types');
 
 /**
  * Update column title, and emit changes results.
@@ -21,12 +21,13 @@ async function updateColumn(title, columnId, companyId) {
   );
 
   const column = await columnDBService.getSingleColumn({_id: columnId});
-
   const results = await getCompanyColumns(companyId);
+
   results.updateData = {
-    message_type: UPDATE_COLUMN,
+    message_type: TYPE_UPDATE_COLUMN,
     new_name: title
   };
+
   webSocketService.getConnection().emit(`${results.columnOrder._id}-${column.account_id}-${companyId}`, results);
 
   return results;
