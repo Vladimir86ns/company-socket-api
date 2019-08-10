@@ -74,5 +74,6 @@ async function createColumnOrder(companyId) {
 };
 
 module.exports = {
-  updateColumn
+  updateColumn,
+  getCompanyColumns,
 };
