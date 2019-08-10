@@ -4,61 +4,6 @@ const ColumnOrder = require('../../shared/database/models/column-order.schema');
 const map = require('lodash/map');
 const isEmpty = require('lodash/isEmpty');
 const webSocketService = require('../../shared/websocket/websocket.service');
-const { TYPE_CREATE_COLUMN, TYPE_CREATE_TASK } = require('../../shared/consts/messages-types');
-var moment = require('moment');
-
-/**
- * Create new column, and update column order with column id.
- * 
- * @param {string} title 
- * @param {number} company_id 
- * @param {number} account_id 
- */
-async function createColumn(title, company_id, account_id) {
-  const column = new Column({ title, company_id, account_id });
-  await column.save();
-
-  const columnOrder = await updateColumnOrder(company_id);
-  const results = await getCompanyColumns(company_id);
-
-  results.updateData = {
-    message_type: TYPE_CREATE_COLUMN,
-    new_name: title
-  };
-
-  webSocketService.getConnection().emit(`${columnOrder._id}-${account_id}-${company_id}`, results);
-
-  return results;
-};
-
-/**
- * Create new task, and update column with new task id, and put id 
- * on first element of array.
- * 
- * @param {string} title 
- * @param {string} description 
- * @param {number} authorId 
- * @param {number} columnId 
- * @param {string} columnOrderId 
- * @param {number} companyId 
- */
-async function createTask(properties) {
-  properties.created_at = moment().format('lll'); 
-  const task = new Task(properties);
-  await task.save();
-  const column = await Column.findOne({_id: properties.column_id}).exec();
-  await column.update({task_ids: [task._id].concat(column.task_ids)});
-  const results = await getCompanyColumns(properties.company_id);
-
-  results.updateData = {
-    message_type: TYPE_CREATE_TASK,
-    new_name: properties.title
-  };
-
-  webSocketService.getConnection().emit(`${properties.column_order_id}-${column.account_id}-${properties.company_id}`, results);
-
-  return results;
-};
 
 /**
  * Get all company for dashboards, if company, do not have dashboard,
@@ -142,9 +87,8 @@ function unsubscribe(eventName) {
 
 module.exports = {
   getCompanyColumns,
-  createColumn,
-  createTask,
   createColumnOrder,
   subscribe,
-  unsubscribe
+  unsubscribe,
+  updateColumnOrder
 }
