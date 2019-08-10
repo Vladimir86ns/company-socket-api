@@ -14,6 +14,18 @@ async function createTask(req, res) {
   );
 };
 
+async function updateTask(req, res) {
+  const errors = get(validationResult(req), 'errors');
+  if (!isEmpty(errors)) {
+    return res.status(404).json(errors);
+  }
+
+  res.json(
+    await taskService.updateTask(req.body)
+  );
+};
+
 module.exports = {
   createTask,
+  updateTask,
 }

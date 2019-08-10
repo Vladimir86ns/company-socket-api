@@ -4,6 +4,11 @@ async function findTasks(query, params = {}) {
  return await Task.find(query, params).exec();
 };
 
+async function updateTasks(query, params = {}) {
+  return await Task.updateOne(query, params);
+ };
+
 module.exports = {
-  findTasks
+  findTasks,
+  updateTasks
 };

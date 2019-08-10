@@ -1,20 +1,16 @@
 const Column = require('../../shared/database/models/column.schema');
 const Task = require('../../shared/database/models/task.schema');
+const taskDBService = require('./task-db.service');
 const columnService = require('../../column/services/column.service');
 const webSocketService = require('../../shared/websocket/websocket.service');
-const { TYPE_CREATE_TASK } = require('../../shared/consts/messages-types');
+const { TYPE_CREATE_TASK, TYPE_UPDATE_TASK } = require('../../shared/consts/messages-types');
 var moment = require('moment');
 
 /**
  * Create new task, and update column with new task id,
  * put id on first element of array.
  * 
- * @param {string} title 
- * @param {string} description 
- * @param {number} authorId 
- * @param {number} columnId 
- * @param {string} columnOrderId 
- * @param {number} companyId 
+ * @param {object} properties
  */
 async function createTask(properties) {
   properties.created_at = moment().format('lll'); 
@@ -34,7 +30,29 @@ async function createTask(properties) {
   return results;
 };
 
+/**
+ * Update task.
+ * 
+ * @param {object} properties
+ */
+async function updateTask(properties) {
+  properties.updated_at = moment().format('lll');
+  await taskDBService.updateTasks({_id: properties.task_id}, properties);
+
+  const results = await columnService.getCompanyColumns(properties.company_id);
+
+  results.updateData = {
+    message_type: TYPE_UPDATE_TASK,
+    new_name: properties.title
+  };
+
+  webSocketService.getConnection().emit(`${properties.column_order_id}-${properties.account_id}-${properties.company_id}`, results);
+
+  return results;
+}
+
 module.exports = {
   createTask,
+  updateTask,
 }
 
