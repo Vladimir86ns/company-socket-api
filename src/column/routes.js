@@ -4,6 +4,7 @@ const validator = require('./validators/column.validator');
 
 const router = new Router();
 
+router.post('/dashboard/column/create', validator.validateCreateColumn(), columnController.createColumn);
 router.post('/dashboard/column/update', validator.validateUpdateColumn(), columnController.updateColumn);
 
 module.exports = router;

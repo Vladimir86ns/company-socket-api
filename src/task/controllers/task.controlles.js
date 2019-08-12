@@ -1,33 +1,31 @@
-const columnService = require('../services/column.service');
+const taskService = require('../services/task.service');
 const { validationResult } = require('express-validator');
 const isEmpty = require('lodash/isEmpty');
 const get = require('lodash/get');
 
-async function createColumn(req, res) {
+async function createTask(req, res) {
   const errors = get(validationResult(req), 'errors');
   if (!isEmpty(errors)) {
     return res.status(404).json(errors);
   }
 
-  const { title, company_id, account_id } = req.body;
   res.json(
-    await columnService.createColumn(title, company_id, account_id)
+    await taskService.createTask(req.body)
   );
 };
 
-async function updateColumn(req, res) {
+async function updateTask(req, res) {
   const errors = get(validationResult(req), 'errors');
   if (!isEmpty(errors)) {
     return res.status(404).json(errors);
   }
 
-  const { title, column_id, company_id } = req.body;
   res.json(
-    await columnService.updateColumn(title, column_id, company_id)
+    await taskService.updateTask(req.body)
   );
 };
 
 module.exports = {
-  updateColumn,
-  createColumn,
-};
+  createTask,
+  updateTask,
+}

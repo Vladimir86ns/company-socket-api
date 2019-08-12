@@ -1,11 +1,37 @@
+const Column = require('../../shared/database/models/column.schema');
 const taskDBService = require('../../task/services/task-db.service');
 const columnDBService = require('./column-db.service');
+const dashboardService = require('../../dashboard/services/dashboard.service');
 const dashboardDBService = require('../../dashboard/services/dashboard-db.service');
 const ColumnOrder = require('../../shared/database/models/column-order.schema');
 const map = require('lodash/map');
 const isEmpty = require('lodash/isEmpty');
 const webSocketService = require('../../shared/websocket/websocket.service');
-const { TYPE_UPDATE_COLUMN} = require('../../shared/consts/messages-types');
+const { TYPE_CREATE_COLUMN, TYPE_UPDATE_COLUMN } = require('../../shared/consts/messages-types');
+
+/**
+ * Create new column, and update column order with column id.
+ * 
+ * @param {string} title 
+ * @param {number} company_id 
+ * @param {number} account_id 
+ */
+async function createColumn(title, company_id, account_id) {
+  const column = new Column({ title, company_id, account_id });
+  await column.save();
+
+  const columnOrder = await dashboardService.updateColumnOrder(company_id);
+  const results = await getCompanyColumns(company_id);
+
+  results.updateData = {
+    message_type: TYPE_CREATE_COLUMN,
+    new_name: title
+  };
+
+  webSocketService.getConnection().emit(`${columnOrder._id}-${account_id}-${company_id}`, results);
+
+  return results;
+};
 
 /**
  * Update column title, and emit changes results.
@@ -74,5 +100,7 @@ async function createColumnOrder(companyId) {
 };
 
 module.exports = {
-  updateColumn
+  updateColumn,
+  getCompanyColumns,
+  createColumn,
 };

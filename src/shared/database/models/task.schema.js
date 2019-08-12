@@ -5,9 +5,14 @@ const taskSchema = new Schema({
   title: { type: String, min: 1, max: 100 },
   description: { type: String, min: 1, max: 500 },
   author_id: { type: Number, min: 1, max: 50 },
+  author_name: { type: String, max: 100 },
+  updated_by_id: { type: String, max: 100 },
+  updated_by_name: { type: String, max: 100 },
+  updated_at: { type: String },
   assigned_ids: [Number],
   created_at: { type: String },
-  column_id: { type: Schema.Types.ObjectId, ref: 'Column' }
+  column_id: { type: Schema.Types.ObjectId, ref: 'Column' },
+  only_assigned_can_see: { type: Boolean, default: false },
 });
 
 module.exports = model('Task', taskSchema);
