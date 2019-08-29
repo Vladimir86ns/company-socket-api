@@ -9,9 +9,8 @@ async function createColumn(req, res) {
     return res.status(404).json(errors);
   }
 
-  const { title, company_id, account_id } = req.body;
   res.json(
-    await columnService.createColumn(title, company_id, account_id)
+    await columnService.createColumn(req.body)
   );
 };
 

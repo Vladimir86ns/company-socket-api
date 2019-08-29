@@ -1,12 +1,6 @@
-const Column = require('../../shared/database/models/column.schema');
-const taskDBService = require('../../task/services/task-db.service');
-const columnDBService = require('./column-db.service');
-const dashboardService = require('../../dashboard/services/dashboard.service');
-const dashboardDBService = require('../../dashboard/services/dashboard-db.service');
-const ColumnOrder = require('../../shared/database/models/column-order.schema');
-const map = require('lodash/map');
-const isEmpty = require('lodash/isEmpty');
+const dashboardService = require('../../dashboard/services/dashboard-service');
 const webSocketService = require('../../shared/websocket/websocket.service');
+const dbMysql = require('../../shared/database-mysql');
 const { TYPE_CREATE_COLUMN, TYPE_UPDATE_COLUMN } = require('../../shared/consts/messages-types');
 
 /**
@@ -16,21 +10,46 @@ const { TYPE_CREATE_COLUMN, TYPE_UPDATE_COLUMN } = require('../../shared/consts/
  * @param {number} company_id 
  * @param {number} account_id 
  */
-async function createColumn(title, company_id, account_id) {
-  const column = new Column({ title, company_id, account_id });
-  await column.save();
+async function createColumn(attributes) {
+  const query = `
+    INSERT INTO columns (title, company_id, account_id, dashboard_id, created_at)
+    VALUES (
+      '${attributes.title}',
+      ${attributes.company_id},
+      ${attributes.account_id},
+      (SELECT id FROM dashboards WHERE id = ${attributes.dashboard_id}),
+      CURRENT_TIMESTAMP
+    )`;
 
-  const columnOrder = await dashboardService.updateColumnOrder(company_id);
-  const results = await getCompanyColumns(company_id);
+  dbMysql.query(query)
+    .then(res => getAndUpdateDashboardWithColumnIds(res.insertId, attributes.company_id))
+    .catch(err => console.log(err));
 
-  results.updateData = {
+  const newResults = await dashboardService.getCompanyDashboard(attributes.company_id);
+
+  newResults.updateData = {
     message_type: TYPE_CREATE_COLUMN,
-    new_name: title
+    new_name: attributes.title
   };
 
-  webSocketService.getConnection().emit(`${columnOrder._id}-${account_id}-${company_id}`, results);
+  webSocketService.getConnection().emit(`${attributes.dashboard_id}-${attributes.account_id}-${attributes.company_id}`, newResults);
 
-  return results;
+  return newResults;
+};
+
+/**
+ * Update column task ids.
+ * 
+ * @param {string} title 
+ * @param {number} company_id 
+ * @param {number} account_id 
+ */
+async function updateColumnTaskIds(columnId, taskIds) {
+  const query = `UPDATE columns SET task_ids = '${taskIds.toString()}' WHERE id = ${columnId}`;
+
+  await dbMysql.query(query)
+    .then(res => console.log('columns is updated', res))
+    .catch(err => console.log(err));
 };
 
 /**
@@ -41,66 +60,52 @@ async function createColumn(title, company_id, account_id) {
  * @param {number} companyId 
  */
 async function updateColumn(title, columnId, companyId) {
-  await columnDBService.updateSingleColumn(
-    {_id: columnId, company_id: companyId},
-    {title: title}
-  );
+  const query = `
+    UPDATE columns 
+    SET 
+    title = '${title}' 
+    WHERE id = ${columnId}`;
 
-  const column = await columnDBService.getSingleColumn({_id: columnId});
-  const results = await getCompanyColumns(companyId);
+  await dbMysql.query(query)
+    .then(res => console.log('columns is updated', res))
+    .catch(err => console.log(err));
 
-  results.updateData = {
+  const newResults = await dashboardService.getCompanyDashboard(companyId);
+
+  newResults.updateData = {
     message_type: TYPE_UPDATE_COLUMN,
     new_name: title
   };
 
-  webSocketService.getConnection().emit(`${results.columnOrder._id}-${column.account_id}-${companyId}`, results);
+  webSocketService.getConnection().emit(`${newResults.dashboard.id}-${newResults.columns[0].account_id}-${companyId}`, newResults);
 
-  return results;
+  return newResults;
 };
 
-/**
- * Get all company for dashboards, if company, do not have dashboard,
- * create new column order for that company.
- * 
- * @param {number} companyId 
- */
-async function getCompanyColumns(companyId) {
-  // TODO find better way to get all company columns with tasks
-  const allColumns = await columnDBService.findColumn({company_id: companyId}, { __v: 0  });
-  const onlyIdsValue = map(allColumns, (column) => {
-    return column._id;
-  });
+async function getAndUpdateDashboardWithColumnIds(newId, companyId) {
+  const query = `
+    SELECT column_ids 
+    FROM dashboards
+    WHERE company_id = ${companyId}`
+  dbMysql.query(query)
+    .then(res => {
+      updateDashboardWithColumnIds(res[0].column_ids, newId, companyId);
+    })
+    .catch(err => console.log(err));
+}
 
-  const allTasks = await taskDBService.findTasks({column_id: {$in: onlyIdsValue}}, { __v: 0 });
-  let columnOrder = await dashboardDBService.findOneDashboard({company_id: companyId}, { __v: 0 });
+async function updateDashboardWithColumnIds(ids, newId, companyId) {
+  const oldIds = ids ? ids.split(",") : [];
+  oldIds.push(newId);
+  const query = `UPDATE dashboards SET column_ids = '${oldIds.toString()}' WHERE company_id = ${companyId}`;
 
-  // if new company does not have column order, create new one
-  if (isEmpty(columnOrder)) {
-    columnOrder = await createColumnOrder(company_id);
-  }
-
-  return {
-    columns: allColumns,
-    tasks: allTasks,
-    columnOrder: columnOrder
-  };
-};
-
-/**
- * Create column order, on new task dashboard.
- * 
- * @param {number} companyId 
- */
-async function createColumnOrder(companyId) {
-  const columnOrder = new ColumnOrder({ column_ids:  [], company_id: companyId});
-  columnOrder.save();
-
-  return columnOrder;
-};
+  dbMysql.query(query)
+    .then(res => console.log(res))
+    .catch(err => console.log(err));
+}
 
 module.exports = {
   updateColumn,
-  getCompanyColumns,
   createColumn,
+  updateColumnTaskIds,
 };

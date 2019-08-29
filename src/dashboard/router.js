@@ -5,7 +5,7 @@ const validator = require('./validators/dashboard.validator');
 const router = new Router();
 
 router.post('/dashboard/company/:company_id/columnOrder/create', dashboardController.createColumnOrder);
-router.get('/dashboard/company/:company_id/columns', dashboardController.getCompanyColumns);
+router.get('/dashboard/company/:company_id/columns', dashboardController.getCompanyDashboard);
 router.get('/dashboard/company/subscribe', dashboardController.subscribe);
 router.get('/dashboard/company/unsubscribe', dashboardController.unsubscribe);
 

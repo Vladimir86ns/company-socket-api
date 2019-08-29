@@ -1,8 +1,8 @@
 const dashboardService = require('../services/dashboard.service');
 
-async function getCompanyColumns(req, res) {
+async function getCompanyDashboard(req, res) {
   const { company_id } = req.params;
-  const results = await dashboardService.getCompanyColumns(company_id);
+  const results = await dashboardService.getCompanyDashboard(company_id);
   res.json(results);
 };
 
@@ -23,7 +23,7 @@ function unsubscribe(req, res) {
 }
 
 module.exports = {
-  getCompanyColumns,
+  getCompanyDashboard,
   createColumnOrder,
   subscribe,
   unsubscribe
